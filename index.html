@@ -6,6 +6,7 @@
 <title>Transgalactique</title>
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 <style>
+  [hidden] { display: none !important; }
   :root { --bg: #0d0d14; --ink: #e9e6df; --dot: #2a2a36; --accent: #f0a050; }
   * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; }
@@ -28,6 +29,16 @@
     padding: 14px 26px; font: inherit; font-size: 15px; letter-spacing: .12em; cursor: pointer;
   }
   .hint { text-align: center; font-size: 12px; opacity: .5; padding: 0 16px 16px; }
+  .film-btn {
+    display: block; margin: 0 auto 14px; background: transparent; color: var(--ink);
+    border: 1px solid var(--ink); border-radius: 999px; padding: 12px 24px;
+    font: inherit; font-size: 14px; letter-spacing: .12em; cursor: pointer;
+  }
+  #film { position: fixed; inset: 0; background: #000; display: flex; align-items: center;
+          justify-content: center; z-index: 20; }
+  #film video { width: 100%; max-height: 100%; }
+  #cerrar { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: 16px;
+            background: none; border: 0; color: var(--ink); font: inherit; font-size: 28px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -48,6 +59,17 @@
     <button slot="ar-button" class="ar-btn">VOIR DANS L'ESPACE</button>
   </model-viewer>
 
+  <button class="film-btn" id="ver-film">VOIR LE FILM</button>
   <p class="hint">Pose le téléphone face à une table, puis touche le bouton.</p>
+
+  <div id="film" hidden>
+    <button id="cerrar" aria-label="Fermer">×</button>
+    <video id="video" src="transgalactique_film.mp4" playsinline controls loop preload="none"></video>
+  </div>
+  <script>
+    const film = document.getElementById("film"), video = document.getElementById("video");
+    document.getElementById("ver-film").onclick = () => { film.hidden = false; video.play(); };
+    document.getElementById("cerrar").onclick = () => { video.pause(); film.hidden = true; };
+  </script>
 </body>
 </html>
