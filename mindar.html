@@ -40,7 +40,7 @@ const estado = document.getElementById("estado");
 document.getElementById("go").addEventListener("click", async () => {
   estado.textContent = "chargement…";
   try {
-    const mindar = new MindARThree({ container: document.body, imageTargetSrc: "hoja_test.mind" });
+    const mindar = new MindARThree({ container: document.body, imageTargetSrc: "hoja_test.mind?v=pk" });
     const { renderer, scene, camera } = mindar;
     scene.add(new THREE.HemisphereLight(0xffffff, 0x333344, 2.2));
     const sol = new THREE.DirectionalLight(0xfff2e0, 2.0); sol.position.set(1, 2, 3); scene.add(sol);
