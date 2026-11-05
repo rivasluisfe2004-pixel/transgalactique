@@ -12,9 +12,6 @@
   html, body { height: 100%; }
   body {
     background: var(--bg);
-    /* trame de points, comme le papier tramé */
-    background-image: radial-gradient(var(--dot) 1.2px, transparent 1.4px);
-    background-size: 9px 9px;
     color: var(--ink);
     font-family: "Courier New", ui-monospace, monospace;
     display: flex; flex-direction: column;
@@ -29,6 +26,9 @@
     padding: 14px 26px; font: inherit; font-size: 15px; letter-spacing: .12em; cursor: pointer;
   }
   .hint { text-align: center; font-size: 12px; opacity: .5; padding: 0 16px 16px; }
+  #intro { position: fixed; inset: 0; z-index: 30; display: block; width: 100%; height: 100%;
+           background: #ece7dc; cursor: pointer; transition: opacity .6s ease; }
+  #intro.fuera { opacity: 0; pointer-events: none; }
   .film-btn {
     display: block; margin: 0 auto 14px; background: transparent; color: var(--ink);
     border: 1px solid var(--ink); border-radius: 999px; padding: 12px 24px;
@@ -42,6 +42,7 @@
 </style>
 </head>
 <body>
+  <canvas id="intro" aria-label="Introduction : la trame devient l’espace"></canvas>
   <header>
     <h1>TRANSGALACTIQUE</h1>
     <p>un ailleurs, pour des générations.</p>
@@ -70,6 +71,78 @@
     const film = document.getElementById("film"), video = document.getElementById("video");
     document.getElementById("ver-film").onclick = () => { film.hidden = false; video.play(); };
     document.getElementById("cerrar").onclick = () => { video.pause(); film.hidden = true; };
+  </script>
+  <script>
+  /* INTRO « Le portail » (≈4,2 s) : la feuille tramée s'éteint, les points deviennent
+     des étoiles puis filent vers nous. Un toucher la passe. ?t=1.5 fige un instant (pour vérifier). */
+  (() => {
+    const cv = document.getElementById("intro"), ctx = cv.getContext("2d");
+    const fijo = new URLSearchParams(location.search).get("t");
+    const reducido = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const FRASE = "Au-delà du point, notre futur.";
+    const PAPEL = [236, 231, 220], NOCHE = [6, 6, 11], TINTA = [110, 104, 95];
+    const DUR = 4.2;
+    let W, H, DPR, pts = [];
+    const mezcla = (a, b, k) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
+    const suave = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+    const tramo = (t, a, b) => suave((t - a) / (b - a));
+    function preparar() {
+      DPR = Math.min(devicePixelRatio || 1, 2);
+      W = cv.width = innerWidth * DPR; H = cv.height = innerHeight * DPR;
+      // rejilla girada como la trama real (paso ~9 px, inclinada ~-12°)
+      pts = []; const paso = 9 * DPR, ang = -12 * Math.PI / 180, c = Math.cos(ang), s = Math.sin(ang);
+      const R = Math.hypot(W, H) / 2 + paso, cx = W / 2, cy = H / 2;
+      let semilla = 7; const azar = () => (semilla = (semilla * 16807) % 2147483647) / 2147483647;
+      for (let i = -R; i <= R; i += paso) for (let j = -R; j <= R; j += paso) {
+        const x = cx + i * c - j * s, y = cy + i * s + j * c;
+        if (x < -paso || y < -paso || x > W + paso || y > H + paso) continue;
+        // solo algunos puntos se vuelven estrellas
+        pts.push({ x, y, b: azar(), naranja: azar() < 0.07, estrella: azar() < 0.22, v: 0.6 + azar() * 1.4 });
+      }
+    }
+    function dibujar(t) {
+      const kNoche = tramo(t, 0.7, 1.7), kEstr = tramo(t, 1.2, 2.0), kViaje = tramo(t, 1.9, 3.9);
+      ctx.fillStyle = `rgb(${mezcla(PAPEL, NOCHE, kNoche)})`; ctx.fillRect(0, 0, W, H);
+      const cx = W / 2, cy = H / 2, rPunto = 2.6 * DPR;
+      for (const p of pts) {
+        if (!p.estrella && kEstr >= 1) continue;
+        const alpha = p.estrella ? 1 : 1 - kEstr;                       // los demás se apagan
+        const col = mezcla(TINTA, p.naranja ? [240, 140, 50] : [225, 230, 255], p.estrella ? kEstr : kNoche * 0.3);
+        const r = rPunto * (1 - kEstr * (p.estrella ? 0.62 - p.b * 0.25 : 1));
+        let x = p.x, y = p.y;
+        if (p.estrella && kViaje > 0) {                                  // viaje con estela
+          const dx = p.x - cx, dy = p.y - cy;
+          const f = 1 + Math.pow(kViaje, 2.2) * 9 * p.v;
+          const fPrev = 1 + Math.pow(Math.max(0, kViaje - 0.06), 2.2) * 9 * p.v;
+          x = cx + dx * f; y = cy + dy * f;
+          ctx.strokeStyle = `rgba(${col},${0.85 * alpha})`; ctx.lineWidth = Math.max(1, r);
+          ctx.beginPath(); ctx.moveTo(cx + dx * fPrev, cy + dy * fPrev); ctx.lineTo(x, y); ctx.stroke();
+        }
+        ctx.fillStyle = `rgba(${col},${alpha})`;
+        ctx.beginPath(); ctx.arc(x, y, Math.max(0.5 * DPR, r), 0, 7); ctx.fill();
+      }
+      const kTxt = tramo(t, 2.2, 2.7) * (1 - tramo(t, 3.5, 3.9));      // la frase
+      if (kTxt > 0) {
+        ctx.font = `${Math.round(Math.min(W / 22, 26 * DPR))}px "Courier New", monospace`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = `rgba(233,230,223,${kTxt})`; ctx.fillText(FRASE, cx, cy);
+      }
+    }
+    function terminar() { cv.classList.add("fuera"); setTimeout(() => cv.remove(), 700); }
+    preparar(); addEventListener("resize", preparar);
+    if (fijo !== null) { dibujar(parseFloat(fijo)); return; }
+    if (reducido) { dibujar(1.9); setTimeout(terminar, 900); return; }
+    const t0 = performance.now();
+    cv.addEventListener("click", terminar);
+    setTimeout(() => cv.isConnected && terminar(), DUR * 1000 + 600);   // por si el navegador pausa la animación
+    (function bucle(now) {
+      if (!cv.isConnected) return;
+      const t = (now - t0) / 1000;
+      dibujar(t);
+      if (t >= DUR) return terminar();
+      requestAnimationFrame(bucle);
+    })(t0);
+  })();
   </script>
 </body>
 </html>
