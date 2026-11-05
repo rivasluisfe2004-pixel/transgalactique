@@ -40,8 +40,11 @@ const estado = document.getElementById("estado");
 document.getElementById("go").addEventListener("click", async () => {
   estado.textContent = "chargement…";
   try {
-    const mindar = new MindARThree({ container: document.body, imageTargetSrc: "hoja_test.mind?v=pk" });
+    const mindar = new MindARThree({ container: document.body, imageTargetSrc: "hoja_test.mind?v=qr",
+      filterMinCF: 0.0001, filterBeta: 0.001,   // más suavizado = menos temblor
+      warmupTolerance: 5, missTolerance: 10 });
     const { renderer, scene, camera } = mindar;
+    renderer.setClearColor(0x000000, 0);   // fondo transparente: se ve la cámara
     scene.add(new THREE.HemisphereLight(0xffffff, 0x333344, 2.2));
     const sol = new THREE.DirectionalLight(0xfff2e0, 2.0); sol.position.set(1, 2, 3); scene.add(sol);
 
@@ -50,7 +53,7 @@ document.getElementById("go").addEventListener("click", async () => {
     const modelo = gltf.scene;
     // la escena está en metros con Y hacia arriba; la hoja mide 1 de ancho y su "arriba" es +Z
     modelo.rotation.x = Math.PI / 2;
-    modelo.scale.setScalar(1.2);
+    modelo.scale.setScalar(0.75);   // más pequeña: se ve la hoja debajo
     ancla.group.add(modelo);
     modelo.updateMatrixWorld(true);
     const caja = new THREE.Box3().setFromObject(modelo);
