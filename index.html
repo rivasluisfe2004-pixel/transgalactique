@@ -6,6 +6,7 @@
 <title>Transgalactique</title>
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 <style>
+  @font-face { font-family: "Planet Kosmos"; src: url("fonts/PlanetKosmos.ttf") format("truetype"); font-display: swap; }
   [hidden] { display: none !important; }
   :root { --bg: #0d0d14; --ink: #e9e6df; --dot: #2a2a36; --accent: #f0a050; }
   * { box-sizing: border-box; margin: 0; }
@@ -17,13 +18,13 @@
     display: flex; flex-direction: column;
   }
   header { padding: 20px 16px 0; text-align: center; }
-  h1 { font-weight: 400; letter-spacing: .35em; font-size: clamp(16px, 5vw, 28px); }
+  h1 { font-family: "Planet Kosmos", "Courier New", monospace; font-weight: 400; letter-spacing: .03em; font-size: clamp(22px, 7.4vw, 48px); white-space: nowrap; }
   header p { opacity: .65; font-size: 13px; margin-top: 6px; letter-spacing: .08em; }
   model-viewer { flex: 1; width: 100%; min-height: 60vh; --poster-color: transparent; }
   .ar-btn {
     position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%);
     background: var(--ink); color: var(--bg); border: 0; border-radius: 999px;
-    padding: 14px 26px; font: inherit; font-size: 15px; letter-spacing: .12em; cursor: pointer;
+    padding: 14px 26px; font: 17px "Planet Kosmos", "Courier New", monospace; letter-spacing: .06em; cursor: pointer;
   }
   .hint { text-align: center; font-size: 12px; opacity: .5; padding: 0 16px 16px; }
   #intro { position: fixed; inset: 0; z-index: 30; display: block; width: 100%; height: 100%;
@@ -32,7 +33,7 @@
   .film-btn {
     display: block; margin: 0 auto 14px; background: transparent; color: var(--ink);
     border: 1px solid var(--ink); border-radius: 999px; padding: 12px 24px;
-    font: inherit; font-size: 14px; letter-spacing: .12em; cursor: pointer;
+    font: 16px "Planet Kosmos", "Courier New", monospace; letter-spacing: .06em; cursor: pointer;
   }
   #film { position: fixed; inset: 0; background: #000; display: flex; align-items: center;
           justify-content: center; z-index: 20; }
@@ -123,14 +124,18 @@
       }
       const kTxt = tramo(t, 2.2, 2.7) * (1 - tramo(t, 3.5, 3.9));      // la frase
       if (kTxt > 0) {
-        ctx.font = `${Math.round(Math.min(W / 22, 26 * DPR))}px "Courier New", monospace`;
+        let tam = Math.round(34 * DPR);
+        ctx.font = `${tam}px "Planet Kosmos", "Courier New", monospace`;
+        const ancho = ctx.measureText(FRASE).width;
+        if (ancho > W * 0.88) { tam = Math.floor(tam * W * 0.88 / ancho); ctx.font = `${tam}px "Planet Kosmos", "Courier New", monospace`; }
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillStyle = `rgba(233,230,223,${kTxt})`; ctx.fillText(FRASE, cx, cy);
       }
     }
     function terminar() { cv.classList.add("fuera"); setTimeout(() => cv.remove(), 700); }
+    document.fonts && document.fonts.load('30px "Planet Kosmos"');
     preparar(); addEventListener("resize", preparar);
-    if (fijo !== null) { dibujar(parseFloat(fijo)); return; }
+    if (fijo !== null) { (document.fonts ? document.fonts.load('30px "Planet Kosmos"') : Promise.resolve()).then(() => dibujar(parseFloat(fijo))); return; }
     if (reducido) { dibujar(1.9); setTimeout(terminar, 900); return; }
     const t0 = performance.now();
     cv.addEventListener("click", terminar);
