@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transgalactique — sur la feuille</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0d0d14; color: #e9e6df;
+               font-family: "Courier New", ui-monospace, monospace; overflow: hidden; }
+  #intro { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+           justify-content: center; gap: 18px; padding: 24px; text-align: center; z-index: 10;
+           background: radial-gradient(#2a2a36 1.2px, transparent 1.4px) 0 0 / 9px 9px, #0d0d14; }
+  h1 { font-weight: 400; letter-spacing: .35em; font-size: clamp(16px, 5vw, 28px); margin: 0; }
+  p { margin: 0; opacity: .7; font-size: 13px; max-width: 32ch; line-height: 1.5; }
+  button { background: #e9e6df; color: #0d0d14; border: 0; border-radius: 999px;
+           padding: 14px 26px; font: inherit; font-size: 15px; letter-spacing: .12em; cursor: pointer; }
+  #estado { font-size: 12px; opacity: .6; min-height: 1em; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+} }
+</script>
+</head>
+<body>
+<div id="intro">
+  <h1>TRANSGALACTIQUE</h1>
+  <p>Vise la feuille avec la caméra. L'œuvre apparaît dessus.</p>
+  <button id="go">COMMENCER</button>
+  <div id="estado"></div>
+</div>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MindARThree } from "mindar-image-three";
+
+const estado = document.getElementById("estado");
+document.getElementById("go").addEventListener("click", async () => {
+  estado.textContent = "chargement…";
+  try {
+    const mindar = new MindARThree({ container: document.body, imageTargetSrc: "hoja_test.mind" });
+    const { renderer, scene, camera } = mindar;
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x333344, 2.2));
+    const sol = new THREE.DirectionalLight(0xfff2e0, 2.0); sol.position.set(1, 2, 3); scene.add(sol);
+
+    const ancla = mindar.addAnchor(0);
+    const gltf = await new GLTFLoader().loadAsync("transgalactique.glb?v=20261105c");
+    const modelo = gltf.scene;
+    // la escena está en metros con Y hacia arriba; la hoja mide 1 de ancho y su "arriba" es +Z
+    modelo.rotation.x = Math.PI / 2;
+    modelo.scale.setScalar(1.2);
+    ancla.group.add(modelo);
+    modelo.updateMatrixWorld(true);
+    const caja = new THREE.Box3().setFromObject(modelo);
+    const centro = caja.getCenter(new THREE.Vector3());
+    modelo.position.set(-centro.x, -centro.y, -caja.min.z);   // centrada y apoyada en la hoja
+
+    const mixer = new THREE.AnimationMixer(modelo);
+    gltf.animations.forEach(c => mixer.clipAction(c).play());
+    const reloj = new THREE.Clock();
+
+    await mindar.start();
+    document.getElementById("intro").remove();
+    renderer.setAnimationLoop(() => { mixer.update(reloj.getDelta()); renderer.render(scene, camera); });
+  } catch (e) {
+    estado.textContent = "erreur : " + (e && e.message ? e.message : "autorise la caméra et réessaie");
+  }
+});
+</script>
+</body>
+</html>
